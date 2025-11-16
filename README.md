@@ -11,6 +11,12 @@
 - Retrieve device information
 - Scriptable via Python
 
+## Installation
+
+```bash
+pip install pypixelcolor
+```
+
 ## Usage
 
 ### CLI
