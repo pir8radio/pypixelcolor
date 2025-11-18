@@ -32,8 +32,8 @@ def set_pixel(x: int, y: int, color: str, device_info: Optional[DeviceInfo] = No
     """
     Defines the color of a specific pixel.
     Args:
-        x: X coordinate of the pixel (0-15).
-        y: Y coordinate of the pixel (0-15).
+        x: X coordinate of the pixel (0-...).
+        y: Y coordinate of the pixel (0-...).
         color: Color in hexadecimal format (e.g., 'FF0000' for red).
     Returns:
         A SendPlan to define the color of the pixel.
