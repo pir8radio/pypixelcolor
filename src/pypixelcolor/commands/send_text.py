@@ -219,9 +219,14 @@ def _encode_text(text: str, text_size: int, color: str, font: str, font_offset: 
         char_bytes = _logic_reverse_bits_order_bytes(char_bytes)
 
         # Build bytes for this character
-        result += bytes([0x00 if char_width <= 8 else 0x80]) # or 0x80 ? or 0x2a ?
+        if char_width <= 8:
+            result += bytes([0x00]) # 8px width, 16px height
+        elif text_size >= 32:
+            result += bytes([0x02]) # 32 height
+        else:
+            result += bytes([0x80]) # 16px width, 8px height
         result += color_bytes
-        if char_width > 8:
+        if char_width > 8 and text_size < 32:
             result += bytes([char_width & 0xFF])
             result += bytes([text_size & 0xFF])
         result += char_bytes
@@ -352,8 +357,8 @@ def send_text(text: str,
         header1_val = 0x1D + len(text) * (0x04 + char_height * (0x1 if char_height <= 16 else 0x2)) + 0x02
         header3_val = 0x0E + len(text) * (0x04 + char_height * (0x1 if char_height <= 16 else 0x2)) + 0x02
     else:
-        header1_val = 0x1D + len(text) * (0x04 + char_height * (0x1 if char_height <= 16 else 0x2)) + 0x02
-        header3_val = 0x0E + len(text) * (0x04 + char_height * (0x1 if char_height <= 16 else 0x2)) + 0x02
+        header1_val = 29 + len(text) * 68
+        header3_val = 14 + len(text) * 68
     
     header += header1_val.to_bytes(2, byteorder="little")
     header += bytes([
