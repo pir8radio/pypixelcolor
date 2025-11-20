@@ -1,11 +1,11 @@
 import logging
 import binascii
 from pathlib import Path
-from typing import Union, Optional
+from typing import Optional
 from PIL import Image, ImageSequence
 from PIL.Image import Palette
 from io import BytesIO
-from ..lib.transport.send_plan import SendPlan, Window, single_window_plan
+from ..lib.transport.send_plan import SendPlan, Window
 from ..lib.device_info import DeviceInfo
 
 # Register HEIF/HEIC support if available
@@ -280,13 +280,6 @@ def _resize_image(file_bytes: bytes, is_gif: bool, target_width: int, target_hei
         # Size
         logger.info(f"Resized GIF to {len(output.getvalue())} bytes")
         
-        # Debug: save resized GIF
-        # debug_path = Path("tmp/resized_debug.gif")
-        # debug_path.parent.mkdir(parents=True, exist_ok=True)
-        # with open(debug_path, "wb") as f:
-        #     f.write(output.getvalue())
-        # logger.debug(f"Saved resized GIF to {debug_path}")
-        
         return output.getvalue()
     else:
         # Handle static image (PNG)
@@ -302,31 +295,10 @@ def _resize_image(file_bytes: bytes, is_gif: bool, target_width: int, target_hei
         output = BytesIO()
         resized_img.save(output, format='PNG')
         
-        # Debug: save resized PNG
-        # debug_path = Path("tmp/resized_debug.png")
-        # debug_path.parent.mkdir(parents=True, exist_ok=True)
-        # with open(debug_path, "wb") as f:
-        #     f.write(output.getvalue())
-        # logger.debug(f"Saved resized PNG to {debug_path}")
-        
         return output.getvalue()
 
-
-def _load_from_hex(hex_string: str) -> tuple[bytes, bool]:
-    """Load image data from hex string.
-    
-    Args:
-        hex_string: Hexadecimal representation of image data.
-        
-    Returns:
-        Tuple of (file_bytes, is_gif).
-    """
-    file_bytes = bytes.fromhex(hex_string)
-    is_gif = hex_string.upper().startswith("474946")  # 'GIF' magic number
-    return file_bytes, is_gif
-
 # Main function to send image
-def send_image(path_or_hex: Union[str, Path], fit_mode: str = 'crop', device_info: Optional[DeviceInfo] = None):
+def send_image(path: Path, fit_mode: str = 'crop', device_info: Optional[DeviceInfo] = None):
     """
     Send an image or animation.
     Supports:
@@ -349,22 +321,16 @@ def send_image(path_or_hex: Union[str, Path], fit_mode: str = 'crop', device_inf
         If device_info is available, the image will be automatically resized
         to match the target device dimensions if necessary.
     """
-    # Robuste detection: try as Path first, fallback to hex
-    try:
-        path = Path(path_or_hex)
-        if path.exists() and path.is_file():
-            file_bytes, is_gif = _load_from_file(path)
-        else:
-            # Not a valid file path, treat as hex
-            file_bytes, is_gif = _load_from_hex(str(path_or_hex))
-    except (ValueError, OSError):
-        # Path construction or file reading failed, treat as hex
-        file_bytes, is_gif = _load_from_hex(str(path_or_hex))
+    path = Path(path)
+    if path.exists() and path.is_file():
+        file_bytes, is_gif = _load_from_file(path)
+    else:
+        raise ValueError(f"File not found: {path}")
     
     # Resize image if device_info is available and image is not hex string
-    if device_info is not None and isinstance(path_or_hex, (str, Path)):
+    if device_info is not None and isinstance(path, (str, Path)):
         try:
-            path = Path(path_or_hex)
+            path = Path(path)
             if path.exists() and path.is_file():
                 # Only resize actual image files, not hex strings
                 file_bytes = _resize_image(file_bytes, is_gif, device_info.width, device_info.height, fit_mode)
@@ -372,38 +338,50 @@ def send_image(path_or_hex: Union[str, Path], fit_mode: str = 'crop', device_inf
             # If it's a hex string, skip resizing
             pass
 
-    # Prepare size and CRC in little-endian bytes
-    size_bytes_4 = _frame_size_bytes(len(file_bytes), 8)  # 4 bytes little-endian
-    checksum_bytes = _crc32_le(file_bytes)  # 4 bytes little-endian
+    # Process for sending
+    size_bytes = _frame_size_bytes(len(file_bytes), 8)  # 4 bytes little-endian
+    crc_bytes = _crc32_le(file_bytes)  # 4 bytes little-endian
+    payload = file_bytes
 
-    if not is_gif:
-        # PNG: single window frame assembled in bytes
-        inner = bytes([0x02, 0x00, 0x00]) + size_bytes_4 + checksum_bytes + bytes([0x00, 0x65]) + file_bytes
-        prefix = _len_prefix_for(inner)
-        data = prefix + inner
-        return single_window_plan("send_image", data, requires_ack=True)
-
-    # GIF: multi-window. Build per-window frames like legacy send_gif_windowed.
-    size_bytes = size_bytes_4
-    crc_bytes = checksum_bytes
-    gif = file_bytes  # raw GIF data
-
+    # Multi-window path
     window_size = 12 * 1024
     windows = []
     pos = 0
     window_index = 0
-    while pos < len(gif):
-        window_end = min(pos + window_size, len(gif))
-        chunk_payload = gif[pos:window_end]
+    while pos < len(payload):
+        window_end = min(pos + window_size, len(payload))
+        chunk_payload = payload[pos:window_end]
+
         option = 0x00 if window_index == 0 else 0x02
         serial = 0x01 if window_index == 0 else 0x65
-        cur_tail = bytes([0x02, serial])
-        header = bytes([0x03, 0x00, option]) + size_bytes + crc_bytes + cur_tail
+
+        if is_gif:
+            cur_tail = bytes([0x02, serial])
+            header = bytes([0x03, 0x00, option]) + size_bytes + crc_bytes + cur_tail
+        else:
+            cur_tail = bytes([0x00, 0x65])
+            header = bytes([0x02, 0x00, option]) + size_bytes + crc_bytes + cur_tail
+
         frame = header + chunk_payload
         prefix = _len_prefix_for(frame)
         message = prefix + frame
         windows.append(Window(data=message, requires_ack=True))
+
         window_index += 1
         pos = window_end
 
     return SendPlan("send_image", windows)
+
+def send_image_hex(hex_string: str, file_extension: str, fit_mode: str = 'crop', device_info: Optional[DeviceInfo] = None):
+    """
+    Send an image or animation from a hexadecimal string.
+    
+    Args:
+        hex_string: Hexadecimal representation of image data.
+        file_extension: File extension to indicate image type (e.g. '.png', '.gif').
+        device_info: Device information (injected automatically by DeviceSession).
+        fit_mode: Resize mode - 'crop' (default) or 'fit'. 
+                  'crop' will fill the entire target area and crop excess.
+                  'fit' will fit the entire image with black padding.
+    """
+    pass
