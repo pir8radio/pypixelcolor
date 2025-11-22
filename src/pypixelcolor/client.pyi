@@ -35,10 +35,10 @@ class AsyncClient:
     async def delete(self, n: int) -> None:
         """Delete a specific screen by its index."""
         ...
-    async def send_image(self, path_or_hex: Union[str, pathlib._local.Path], fit_mode: str = "crop", device_info: Optional[pypixelcolor.lib.device_info.DeviceInfo] = None) -> None:
+    async def send_image(self, path: Union[str, pathlib._local.Path], resize_method: Union[str, pypixelcolor.commands.send_image.ResizeMethod] = ResizeMethod.CROP, device_info: Optional[pypixelcolor.lib.device_info.DeviceInfo] = None) -> None:
         """Send an image or animation."""
         ...
-    async def send_text(self, text: str, rainbow_mode: int = 0, animation: int = 0, save_slot: int = 0, speed: int = 80, color: str = "ffffff", font: Union[pypixelcolor.fonts.font_enum.Font, str] = 0_CUSONG16, font_size: Optional[int] = None, font_offset: Optional[tuple[int, int]] = None, char_height: Optional[int] = None, device_info: Optional[pypixelcolor.lib.device_info.DeviceInfo] = None) -> None:
+    async def send_text(self, text: str, rainbow_mode: int = 0, animation: int = 0, save_slot: int = 0, speed: int = 80, color: str = "ffffff", font: Union[str, pypixelcolor.lib.font_config.FontConfig] = "CUSONG", char_height: Optional[int] = None, device_info: Optional[pypixelcolor.lib.device_info.DeviceInfo] = None) -> None:
         """Send a text to the device with configurable parameters."""
         ...
     async def set_brightness(self, level: int) -> None:
@@ -99,10 +99,10 @@ class Client:
     def delete(self, n: int) -> None:
         """Delete a specific screen by its index."""
         ...
-    def send_image(self, path_or_hex: Union[str, pathlib._local.Path], fit_mode: str = "crop", device_info: Optional[pypixelcolor.lib.device_info.DeviceInfo] = None) -> None:
+    def send_image(self, path: Union[str, pathlib._local.Path], resize_method: Union[str, pypixelcolor.commands.send_image.ResizeMethod] = ResizeMethod.CROP, device_info: Optional[pypixelcolor.lib.device_info.DeviceInfo] = None) -> None:
         """Send an image or animation."""
         ...
-    def send_text(self, text: str, rainbow_mode: int = 0, animation: int = 0, save_slot: int = 0, speed: int = 80, color: str = "ffffff", font: Union[pypixelcolor.fonts.font_enum.Font, str] = 0_CUSONG16, font_size: Optional[int] = None, font_offset: Optional[tuple[int, int]] = None, char_height: Optional[int] = None, device_info: Optional[pypixelcolor.lib.device_info.DeviceInfo] = None) -> None:
+    def send_text(self, text: str, rainbow_mode: int = 0, animation: int = 0, save_slot: int = 0, speed: int = 80, color: str = "ffffff", font: Union[str, pypixelcolor.lib.font_config.FontConfig] = "CUSONG", char_height: Optional[int] = None, device_info: Optional[pypixelcolor.lib.device_info.DeviceInfo] = None) -> None:
         """Send a text to the device with configurable parameters."""
         ...
     def set_brightness(self, level: int) -> None:

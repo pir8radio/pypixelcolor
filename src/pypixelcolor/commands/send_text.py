@@ -10,7 +10,7 @@ from typing import Optional, Union
 # Locals
 from ..lib.transport.send_plan import single_window_plan
 from ..lib.device_info import DeviceInfo
-from ..fonts.font_enum import Font, FONT_METRICS
+from ..lib.font_config import FontConfig, BUILTIN_FONTS
 
 logger = getLogger(__name__)
 
@@ -42,34 +42,37 @@ def _logic_reverse_bits_order_bytes(data: bytes) -> bytes:
         out += rev.to_bytes(2, byteorder="big")
     return bytes(out)
 
-# Helper function to encode text
+# Helper function to resolve font configuration
 
-def _get_font_path(font_name: str) -> str:
-    """Get the path to the font directory or file."""
-    # Get the base directory where fonts are stored (pypixelcolor/fonts)
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    fonts_dir = os.path.join(base_dir, "fonts")
+def _resolve_font_config(font: Union[str, FontConfig]) -> FontConfig:
+    """Resolve a font specification to a FontConfig object.
     
-    try:
-        font = Font.from_str(font_name)
-        return os.path.join(fonts_dir, font.value + ".ttf")
-    except:
-        pass
+    Args:
+        font: Either a built-in font name (str), a file path (str), or a FontConfig object
+        
+    Returns:
+        FontConfig object
+        
+    Raises:
+        ValueError: If the font cannot be resolved
+    """
+    if isinstance(font, FontConfig):
+        return font
     
-    # Check if ttf file exists
-    font_file = os.path.join(fonts_dir, f"{font_name}.ttf")
-    if os.path.isfile(font_file):
-        return font_file
+    if not isinstance(font, str):
+        raise ValueError(f"Font must be a string or FontConfig, got {type(font)}")
     
-    # Check if folder exists
-    font_folder = os.path.join(fonts_dir, font_name)
-    if os.path.isdir(font_folder):
-        return font_folder
+    # Try built-in fonts first
+    if font in BUILTIN_FONTS:
+        return BUILTIN_FONTS[font]
     
-    # Return default font path
-    default_font = os.path.join(fonts_dir, Font.CUSONG.value + ".ttf")
-    logger.warning(f"Font '{font_name}' not found. Using default font at {default_font}.")
-    return default_font
+    # Try loading as file path
+    if os.path.exists(font):
+        return FontConfig.from_file(font)
+    
+    # Fallback to default font
+    logger.warning(f"Font '{font}' not found. Using default font CUSONG.")
+    return BUILTIN_FONTS["CUSONG"]
 
 
 def _charimg_to_hex_string(img: Image.Image) -> tuple[bytes, int]:
@@ -128,20 +131,20 @@ def _charimg_to_hex_string(img: Image.Image) -> tuple[bytes, int]:
     return bytes(data_bytes), char_width
 
 
-def _char_to_hex(character: str, char_size:int, font_offset: tuple[int, int], font: str, font_size: int) -> tuple[Optional[bytes], int]:
-    """
-    Convert a character to its hexadecimal representation.
+def _char_to_hex(character: str, char_size: int, font_path: str, font_offset: tuple[int, int], font_size: int, pixel_threshold: int) -> tuple[Optional[bytes], int]:
+    """Convert a character to its hexadecimal representation.
     
     Args:
         character (str): The character to convert.
-        text_size (int): The size of the text (height of the matrix).
+        char_size (int): The size of the text (height of the matrix).
+        font_path (str): The path to the font file.
         font_offset (tuple[int, int]): The (x, y) offset for the font.
-        font (str): The font name to use.
+        font_size (int): The font size to use for rendering.
+        pixel_threshold (int): Threshold for converting grayscale to binary.
         
     Returns:
         tuple: (hex_string, char_width)
     """
-    font_path = _get_font_path(font)
 
     try:
         # Generate image with dynamic width
@@ -168,16 +171,6 @@ def _char_to_hex(character: str, char_size:int, font_offset: tuple[int, int], fo
         # Draw text in white (255) for pixel-perfect rendering
         d.text(font_offset, character, fill=255, font=font_obj)
 
-        # Determine pixel threshold from FONT_METRICS for the selected font/size
-        pixel_threshold = 100
-        try:
-            font_enum = Font.from_str(font) if not isinstance(font, Font) else font
-            font_metrics = FONT_METRICS.get(font_enum, {})
-            pixel_threshold = font_metrics.get(int(char_size), {}).get("pixel_threshold", pixel_threshold)
-        except Exception:
-            # Fallback to default threshold if anything goes wrong
-            pass
-
         # Apply threshold for pixel-perfect conversion
         def apply_threshold(pixel):
             return 255 if pixel > pixel_threshold else 0
@@ -190,7 +183,7 @@ def _char_to_hex(character: str, char_size:int, font_offset: tuple[int, int], fo
         return None, 0
 
 
-def _encode_text(text: str, text_size: int, color: str, font: str, font_offset: tuple[int, int], font_size: int) -> bytes:
+def _encode_text(text: str, text_size: int, color: str, font_path: str, font_offset: tuple[int, int], font_size: int, pixel_threshold: int) -> bytes:
     """Encode text to be displayed on the device.
 
     Returns raw bytes. Each character block is composed as:
@@ -220,7 +213,7 @@ def _encode_text(text: str, text_size: int, color: str, font: str, font_offset: 
 
     # Build each character block
     for char in text:
-        char_bytes, char_width = _char_to_hex(char, text_size, font=font, font_offset=font_offset, font_size=font_size)
+        char_bytes, char_width = _char_to_hex(char, text_size, font_path, font_offset, font_size, pixel_threshold)
         if not char_bytes:
             continue
 
@@ -250,9 +243,7 @@ def send_text(text: str,
               save_slot: int = 0,
               speed: int = 80,
               color: str = "ffffff",
-              font: Union[Font, str] = Font.CUSONG,
-              font_size: Optional[int] = None,
-              font_offset: Optional[Optional[tuple[int, int]]] = None,
+              font: Union[str, FontConfig] = "CUSONG",
               char_height: Optional[int] = None,
               device_info: Optional[DeviceInfo] = None
               ):
@@ -266,10 +257,8 @@ def send_text(text: str,
         save_slot (int, optional): Save slot (1-10). Defaults to 1.
         speed (int, optional): Animation speed (0-100). Defaults to 80.
         color (str, optional): Text color in hex. Defaults to "ffffff".
-        font (str, optional): Font name. Defaults to "default".
-        font_offset_x (int, optional): Font X offset. Defaults to 0.
-        font_offset_y (int, optional): Font Y offset. Defaults to 0.
-        text_size (int, optional): Text size. Auto-detected from device_info if not specified.
+        font (str | FontConfig, optional): Built-in font name, file path, or FontConfig object. Defaults to "CUSONG".
+        char_height (int, optional): Character height. Auto-detected from device_info if not specified.
         device_info (DeviceInfo, optional): Device information (injected automatically by DeviceSession).
 
     Returns:
@@ -279,7 +268,10 @@ def send_text(text: str,
         ValueError: If an invalid animation is selected or parameters are out of range.
     """
     
-    # Auto-detect matrix_height from device_info if available
+    # Resolve font configuration
+    font_config = _resolve_font_config(font)
+    
+    # Auto-detect char_height from device_info if available
     if char_height is None:
         if device_info is not None:
             char_height = device_info.height
@@ -287,27 +279,15 @@ def send_text(text: str,
         else:
             char_height = 16  # Default fallback
             logger.warning("Using default matrix height: 16")
-        
-        # Get offset from FONT_METRICS if available
-        try:
-            font_enum = Font.from_str(font) if not isinstance(font, Font) else font
-            font_metrics = FONT_METRICS.get(font_enum, {})
-            if char_height in font_metrics:
-                font_offset = font_metrics[char_height]["offset"]
-                font_size = font_metrics[char_height]["font_size"]
-        except Exception:
-            pass
-        
-    # Normalize font_offset to two integers (x, y)
-    try:
-        font_offset_x, font_offset_y = font_offset if font_offset is not None else (0, 0)
-        font_offset_x = int(font_offset_x)
-        font_offset_y = int(font_offset_y)
-    except Exception:
-        raise ValueError("font_offset must be a tuple of two integers (x, y)")
+    
     char_height = int(char_height)
-    if font_size is None:
-        font_size = char_height
+    
+    # Get metrics for this character height
+    metrics = font_config.get_metrics(char_height)
+    font_size = metrics["font_size"]
+    font_offset = metrics["offset"]
+    font_16bit = metrics["is_16bit"]
+    pixel_threshold = metrics["pixel_threshold"]
     
     # properties: 3 fixed bytes + animation + speed + rainbow + 3 bytes color + 4 zero bytes
     try:
@@ -329,12 +309,6 @@ def send_text(text: str,
     for param, min_val, max_val, name in checks:
         if not (min_val <= param <= max_val):
             raise ValueError(f"{name} must be between {min_val} and {max_val} (got {param})")
-    
-    # Normalize font: accept either FontName or str for backward compatibility
-    if isinstance(font, Font):
-        font_str = font.value
-    else:
-        font_str = str(font)
 
     # Disable unsupported animations (bootloop)
     if int(animation) == 3 or int(animation) == 4:
@@ -347,15 +321,8 @@ def send_text(text: str,
     ########################
     
     header = bytearray()
-
-    # Determine if the font entry declares 16-bit metrics.
-    font_16bit = False
-    font_enum = Font.from_str(font_str) if not isinstance(font, Font) else font
-    font_metrics = FONT_METRICS.get(font_enum, {})
-    if char_height in font_metrics:
-        font_16bit = font_metrics[char_height]["is_16bit"]
                 
-    # Magic formulas
+    # Magic formulas
     if char_height <= 16:
         header1_val = 29 + len(text) * (20 + (18 if font_16bit else 0))
         header3_val = 14 + len(text) * (20 + (18 if font_16bit else 0))
@@ -412,9 +379,10 @@ def send_text(text: str,
         text, 
         char_height, 
         color, 
-        font_str, 
-        (font_offset_x, font_offset_y),
-        font_size
+        font_config.path,
+        font_offset,
+        font_size,
+        pixel_threshold
     )
     
     # number_of_characters: single byte

@@ -1,0 +1,29 @@
+{
+  "name": "SIMSUN",
+  "metrics": {
+    "16": {
+      "font_size": 16,
+      "offset": [0, 0],
+      "is_16bit": false,
+      "pixel_threshold": 70
+    },
+    "20": {
+      "font_size": 20,
+      "offset": [0, 0],
+      "is_16bit": true,
+      "pixel_threshold": 70
+    },
+    "24": {
+      "font_size": 24,
+      "offset": [0, 0],
+      "is_16bit": true,
+      "pixel_threshold": 70
+    },
+    "32": {
+      "font_size": 33,
+      "offset": [0, -2],
+      "is_16bit": true,
+      "pixel_threshold": 100
+    }
+  }
+}
