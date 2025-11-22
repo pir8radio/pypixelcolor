@@ -6,6 +6,7 @@ Command-line interface for iPixel BLE commands
 import asyncio
 import argparse
 import logging
+import sys
 from bleak import BleakScanner
 
 from .lib.logging import setup_logging
@@ -77,16 +78,27 @@ def main() -> None:
     args = parser.parse_args()
     
     setup_logging(use_emojis=not args.noemojis, level=args.loglevel)
-    if args.scan:
-        asyncio.run(scan_devices())
-    elif args.command:
-        if not args.address:
-            logger.error("--address is required when using --command")
-            exit(1)
-        asyncio.run(run_commands(args.command, args.address))
-    else:
-        logger.error("No mode specified. Use --scan or -c with -a to specify an address.")
-        logger.info("For WebSocket server mode, use: python -m pypixelcolor.websocket -a <address>")
+    try:
+        if args.scan:
+            asyncio.run(scan_devices())
+        elif args.command:
+            if not args.address:
+                logger.error("--address is required when using --command")
+                sys.exit(1)
+            asyncio.run(run_commands(args.command, args.address))
+        else:
+            logger.error("No mode specified. Use --scan or -c with -a to specify an address.")
+            logger.info("For WebSocket server mode, use: python -m pypixelcolor.websocket -a <address>")
+    except KeyboardInterrupt:
+        logger.info("Interrupted by user.")
+        sys.exit(0)
+    except Exception as e:
+        logger.error(f"An error occurred: {e}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.exception("Traceback (DEBUG):")
+        else:
+            logger.error("Run with --loglevel DEBUG to see the full traceback.")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
