@@ -1,13 +1,12 @@
 # pypixelcolor
 
-![pypixelcolor](.github/readme/banner.png)
+![pypixelcolor](https://raw.githubusercontent.com/lucagoc/pypixelcolor/refs/heads/main/.github/readme/banner.png)
 
 [![PyPI](https://img.shields.io/pypi/v/pypixelcolor.svg)](https://pypi.org/project/pypixelcolor)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE.md)
 [![Build Status](https://github.com/lucagoc/pypixelcolor/actions/workflows/python-app.yml/badge.svg)](https://github.com/lucagoc/pypixelcolor/actions)
 [![Publish Status](https://github.com/lucagoc/pypixelcolor/actions/workflows/python-publish.yml/badge.svg)](https://github.com/lucagoc/pypixelcolor/actions)
 [![GitHub stars](https://img.shields.io/github/stars/lucagoc/pypixelcolor?style=social)](https://github.com/lucagoc/pypixelcolor/stargazers)
-
 
 `pypixelcolor` (also known as `iPixel-CLI`) is a Python library and CLI tool for controlling iPixel Color LED matrix devices via Bluetooth Low Energy. It allows you to send commands to the device to manipulate the LED display, retrieve device information, and more.
 
