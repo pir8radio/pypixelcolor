@@ -271,7 +271,7 @@ def _split_image_into_chunks(img: Image.Image, chunk_width: int) -> list[Image.I
         chunk_width (int): Width of each chunk in pixels.
 
     Returns:
-        list[Image.Image]: List of image chunks.
+        list[Image.Image]: List of image chunks, all with width=chunk_width (padded with black if needed).
     """
     width, height = img.size
     chunks = []
@@ -282,9 +282,19 @@ def _split_image_into_chunks(img: Image.Image, chunk_width: int) -> list[Image.I
 
         # Crop the chunk from the image
         chunk = img.crop((x, 0, x + actual_width, height))
-        chunks.append(chunk)
 
-        logger.debug(f"Created chunk {len(chunks)}: {actual_width}x{height} pixels at x={x}")
+        # If this chunk is narrower than chunk_width, pad it with black pixels
+        if actual_width < chunk_width:
+            # Create a new image with the full chunk_width, filled with black (0)
+            padded_chunk = Image.new('L', (chunk_width, height), 0)
+            # Paste the actual chunk on the left side
+            padded_chunk.paste(chunk, (0, 0))
+            chunk = padded_chunk
+            logger.debug(f"Created chunk {len(chunks)}: {actual_width}x{height} pixels (padded to {chunk_width}x{height}) at x={x}")
+        else:
+            logger.debug(f"Created chunk {len(chunks)}: {actual_width}x{height} pixels at x={x}")
+
+        chunks.append(chunk)
 
     return chunks
 
