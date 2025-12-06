@@ -367,10 +367,9 @@ def send_image(path: Union[str, Path], resize_method: Union[str, ResizeMethod] =
         - .png, .webp, .jpg, .jpeg, .bmp, .tiff (static)
         - .heic, .heif (static, requires pillow-heif library)
         - .gif (animated)
-        - Raw hexadecimal strings (PNG or GIF) and RGB stream files (needs to be same size as device)
     
     Args:
-        path_or_hex: Either a file path (str/Path) or hexadecimal string.
+        path: File path.
         device_info: Device information (injected automatically by DeviceSession).
         resize_method: Resize method - 'crop' (default) or 'fit'. 
                   'crop' will fill the entire target area and crop excess.

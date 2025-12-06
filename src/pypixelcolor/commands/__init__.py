@@ -25,6 +25,7 @@ COMMANDS = {
     "send_text": send_text.send_text,
     "set_orientation": set_orientation.set_orientation,
     "send_image": send_image.send_image,
+    "send_image_hex": send_image.send_image_hex,
     "set_power": set_power.set_power,
 }
 
