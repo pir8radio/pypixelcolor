@@ -319,12 +319,13 @@ def _process_loaded_bytes(file_bytes: bytes, extension: str) -> tuple[bytes, boo
 
     return file_bytes, is_gif
 
-def _build_send_plan(file_bytes: bytes, is_gif: bool, plan_name: str = "send_image") -> SendPlan:
+def _build_send_plan(file_bytes: bytes, is_gif: bool, plan_name: str = "send_image", save_slot: int = 0) -> SendPlan:
     """
     Build a SendPlan by splitting file_bytes into windows.
 
     plan_name: name to use when constructing the SendPlan (keeps parity with
     previous APIs where hex vs file used slightly different plan names).
+    save_slot: if >= 1, will save to that slot.
     """
     size_bytes = _frame_size_bytes(len(file_bytes), 8)  # 4 bytes little-endian
     crc_bytes = _crc32_le(file_bytes)  # 4 bytes little-endian
@@ -339,13 +340,12 @@ def _build_send_plan(file_bytes: bytes, is_gif: bool, plan_name: str = "send_ima
         chunk_payload = payload[pos:window_end]
 
         option = 0x00 if window_index == 0 else 0x02
-        serial = 0x01 if window_index == 0 else 0x65
 
         if is_gif:
-            cur_tail = bytes([0x02, serial])
+            cur_tail = bytes([0x02, save_slot])
             header = bytes([0x03, 0x00, option]) + size_bytes + crc_bytes + cur_tail
         else:
-            cur_tail = bytes([0x00, 0x65])
+            cur_tail = bytes([0x00, save_slot])
             header = bytes([0x02, 0x00, option]) + size_bytes + crc_bytes + cur_tail
 
         frame = header + chunk_payload
@@ -360,7 +360,7 @@ def _build_send_plan(file_bytes: bytes, is_gif: bool, plan_name: str = "send_ima
 
 
 # Main function to send image
-def send_image(path: Union[str, Path], resize_method: Union[str, ResizeMethod] = ResizeMethod.CROP, device_info: Optional[DeviceInfo] = None):
+def send_image(path: Union[str, Path], resize_method: Union[str, ResizeMethod] = ResizeMethod.CROP, device_info: Optional[DeviceInfo] = None, save_slot: int = 0):
     """
     Send an image or animation.
     Supports:
@@ -374,6 +374,7 @@ def send_image(path: Union[str, Path], resize_method: Union[str, ResizeMethod] =
         resize_method: Resize method - 'crop' (default) or 'fit'. 
                   'crop' will fill the entire target area and crop excess.
                   'fit' will fit the entire image with black padding.
+        save_slot: If >= 1, will save to that slot.
         
     Returns:
         A SendPlan for sending the image/animation.
@@ -386,8 +387,9 @@ def send_image(path: Union[str, Path], resize_method: Union[str, ResizeMethod] =
     # Input normalization
     if isinstance(resize_method, str):
         resize_method = ResizeMethod(resize_method)
-    if isinstance(path, str):        
+    if isinstance(path, str):
         path = Path(path)
+    save_slot = int(save_slot)
     
     # Load image data
     if path.exists() and path.is_file():
@@ -403,10 +405,10 @@ def send_image(path: Union[str, Path], resize_method: Union[str, ResizeMethod] =
     else:
         logger.warning("Device info not provided; skipping image resizing.")
 
-    return _build_send_plan(file_bytes, is_gif, plan_name="send_image")
+    return _build_send_plan(file_bytes, is_gif, plan_name="send_image", save_slot=save_slot)
 
 
-def send_image_hex(hex_string: Union[str, bytes], file_extension: str, resize_method: Union[str, ResizeMethod] = ResizeMethod.CROP, device_info: Optional[DeviceInfo] = None):
+def send_image_hex(hex_string: Union[str, bytes], file_extension: str, resize_method: Union[str, ResizeMethod] = ResizeMethod.CROP, device_info: Optional[DeviceInfo] = None, save_slot: int = 0):
     """
     Send an image or animation from a hexadecimal string.
     
@@ -417,6 +419,7 @@ def send_image_hex(hex_string: Union[str, bytes], file_extension: str, resize_me
         resize_method: Resize method - 'crop' (default) or 'fit'. 
                   'crop' will fill the entire target area and crop excess.
                   'fit' will fit the entire image with black padding.
+        save_slot: If >= 1, will save to that slot.
     """
     # Input normalization
     if isinstance(resize_method, str):
@@ -431,4 +434,4 @@ def send_image_hex(hex_string: Union[str, bytes], file_extension: str, resize_me
     else:
         logger.warning("Device info not provided; skipping image resizing.")
 
-    return _build_send_plan(file_bytes, is_gif, plan_name="send_image_hex")
+    return _build_send_plan(file_bytes, is_gif, plan_name="send_image_hex", save_slot=save_slot)

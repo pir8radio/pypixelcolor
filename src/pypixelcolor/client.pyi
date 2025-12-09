@@ -39,10 +39,10 @@ class AsyncClient:
     async def delete(self, n: int) -> None:
         """Delete a specific screen by its index."""
         ...
-    async def send_image(self, path: str | pathlib.Path, resize_method: str | pypixelcolor.commands.send_image.ResizeMethod = ResizeMethod.CROP, device_info: pypixelcolor.lib.device_info.DeviceInfo | None = None) -> None:
+    async def send_image(self, path: str | pathlib.Path, resize_method: str | pypixelcolor.commands.send_image.ResizeMethod = ResizeMethod.CROP, device_info: pypixelcolor.lib.device_info.DeviceInfo | None = None, save_slot: int = 0) -> None:
         """Send an image or animation."""
         ...
-    async def send_image_hex(self, hex_string: str | bytes, file_extension: str, resize_method: str | pypixelcolor.commands.send_image.ResizeMethod = ResizeMethod.CROP, device_info: pypixelcolor.lib.device_info.DeviceInfo | None = None) -> None:
+    async def send_image_hex(self, hex_string: str | bytes, file_extension: str, resize_method: str | pypixelcolor.commands.send_image.ResizeMethod = ResizeMethod.CROP, device_info: pypixelcolor.lib.device_info.DeviceInfo | None = None, save_slot: int = 0) -> None:
         """Send an image or animation from a hexadecimal string."""
         ...
     async def send_text(self, text: str, rainbow_mode: int = 0, animation: int = 0, save_slot: int = 0, speed: int = 80, color: str = "ffffff", bg_color: str | None = None, font: str | pypixelcolor.lib.font_config.FontConfig = "CUSONG", char_height: int | None = None, var_width: bool = False, chunk_width: int = 16, rtl: bool = False, device_info: pypixelcolor.lib.device_info.DeviceInfo | None = None) -> None:
@@ -110,10 +110,10 @@ class Client:
     def delete(self, n: int) -> None:
         """Delete a specific screen by its index."""
         ...
-    def send_image(self, path: str | pathlib.Path, resize_method: str | pypixelcolor.commands.send_image.ResizeMethod = ResizeMethod.CROP, device_info: pypixelcolor.lib.device_info.DeviceInfo | None = None) -> None:
+    def send_image(self, path: str | pathlib.Path, resize_method: str | pypixelcolor.commands.send_image.ResizeMethod = ResizeMethod.CROP, device_info: pypixelcolor.lib.device_info.DeviceInfo | None = None, save_slot: int = 0) -> None:
         """Send an image or animation."""
         ...
-    def send_image_hex(self, hex_string: str | bytes, file_extension: str, resize_method: str | pypixelcolor.commands.send_image.ResizeMethod = ResizeMethod.CROP, device_info: pypixelcolor.lib.device_info.DeviceInfo | None = None) -> None:
+    def send_image_hex(self, hex_string: str | bytes, file_extension: str, resize_method: str | pypixelcolor.commands.send_image.ResizeMethod = ResizeMethod.CROP, device_info: pypixelcolor.lib.device_info.DeviceInfo | None = None, save_slot: int = 0) -> None:
         """Send an image or animation from a hexadecimal string."""
         ...
     def send_text(self, text: str, rainbow_mode: int = 0, animation: int = 0, save_slot: int = 0, speed: int = 80, color: str = "ffffff", bg_color: str | None = None, font: str | pypixelcolor.lib.font_config.FontConfig = "CUSONG", char_height: int | None = None, var_width: bool = False, chunk_width: int = 16, rtl: bool = False, device_info: pypixelcolor.lib.device_info.DeviceInfo | None = None) -> None:
