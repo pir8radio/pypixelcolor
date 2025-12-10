@@ -44,13 +44,7 @@ def resolve_font_config(font: Union[str, FontConfig]) -> FontConfig:
 
 def get_char_height_from_device(device_info: DeviceInfo) -> int:
     """Map device dimensions to appropriate character height.
-    
-    This function returns a suitable character height based on the device's
-    physical dimensions. Heights are mapped as follows:
-    - 8 pixels:   devices with height <= 8 (small single-line displays)
-    - 16 pixels:  devices with height between 9 and 20 (most common)
-    - 32 pixels:  devices with height > 20 (large displays like 32x32)
-    
+
     Args:
         device_info (DeviceInfo): Device information with width and height.
         
