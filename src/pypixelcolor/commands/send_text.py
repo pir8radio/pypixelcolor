@@ -396,7 +396,7 @@ def _encode_text_chunked(chunks: list[Image.Image], text_size: int, color: str) 
     return bytes(result)
 
 
-def _encode_text(text: str, matrix_height: int, color: str, font_path: str, font_offset: tuple[int, int], font_size: int, pixel_threshold: int) -> bytes:
+def _encode_text(text: str, matrix_height: int, color: str, font_path: str, font_offset: tuple[int, int], font_size: int, pixel_threshold: int, reverse: bool = False) -> bytes:
     """Encode text to be displayed on the device.
 
     Returns raw bytes. Each character block is composed as:
@@ -404,12 +404,13 @@ def _encode_text(text: str, matrix_height: int, color: str, font_path: str, font
 
     Args:
         text (str): The text to encode.
-        text_size (int): The height of the LED matrix.
+        matrix_height (int): The height of the LED matrix.
         color (str): The color in hex format (e.g., 'ffffff').
         font_path (str): Path to the font file.
         font_offset (tuple[int, int]): The (x, y) offset for the font.
         font_size (int): The font size for rendering.
         pixel_threshold (int): Threshold for pixel conversion.
+        reverse (bool): If True, reverses the order of characters. Defaults to False.
 
     Returns:
         bytes: The encoded text as raw bytes ready to be appended to a payload.
@@ -426,8 +427,11 @@ def _encode_text(text: str, matrix_height: int, color: str, font_path: str, font
     if len(color_bytes) != 3:
         raise ValueError("Color must be 3 bytes (6 hex chars), e.g. 'ffffff'")
 
+    # Reverse text if requested
+    text_to_process = text[::-1] if reverse else text
+
     # Build each character block
-    for char in text:
+    for char in text_to_process:
         char_bytes, is_emoji_flag = _char_to_hex(char, matrix_height, font_path, font_offset, font_size, pixel_threshold)
         if not char_bytes:
             continue
@@ -523,9 +527,9 @@ def send_text(text: str,
             raise ValueError("This animation is not supported with this font on non-32x32 devices.")
 
     # Determine if RTL mode should be enabled (only for animation 2)
-    rtl = int(animation) == 2
+    rtl = (int(animation) == 2)
     if rtl:
-        logger.debug("RTL mode enabled for animation 2")
+        logger.debug("Reversed chunk order for RTL display")
 
     #---------------- BUILD PAYLOAD ----------------#
 
@@ -590,7 +594,6 @@ def send_text(text: str,
         # Reverse chunks for RTL display if requested
         if rtl:
             chunks = list(reversed(chunks))
-            logger.info("Reversed chunk order for RTL display")
 
         # Encode chunks as if they were characters
         characters_bytes = _encode_text_chunked(chunks, char_height, color)
@@ -606,7 +609,8 @@ def send_text(text: str,
             font_config.path,
             font_offset,
             font_size,
-            pixel_threshold
+            pixel_threshold,
+            reverse=rtl
         )
 
         # Number of characters is the length of the text
