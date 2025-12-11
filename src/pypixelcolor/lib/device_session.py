@@ -50,6 +50,11 @@ class DeviceSession:
         self._device_info: Optional[DeviceInfo] = None
         self._connected = False
     
+    def _on_disconnect(self, client):
+        """Callback when the BLE device disconnects."""
+        logger.info(f"BLE device disconnected: {self._address}")
+        self._connected = False
+    
     @property
     def address(self) -> str:
         """Get the device address."""
@@ -102,7 +107,7 @@ class DeviceSession:
             raise RuntimeError("Already connected")
         
         logger.info(f"Connecting to {self._address}...")
-        self._client = BleakClient(self._address)
+        self._client = BleakClient(self._address, disconnected_callback=self._on_disconnect)
         await self._client.connect()
         self._connected = True
         logger.info(f"Connected to {self._address}")

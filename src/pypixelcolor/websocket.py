@@ -37,6 +37,7 @@ async def handle_websocket(websocket):
     
     if _device_session is None or not _device_session.is_connected:
         logger.error("Device session is not available")
+        await websocket.send(json.dumps({"status": "error", "message": "Device not connected"}))
         return
     
     device_info = _device_session.get_device_info()
@@ -44,6 +45,12 @@ async def handle_websocket(websocket):
     
     try:
         while True:
+            # Check if device is still connected
+            if not _device_session.is_connected:
+                logger.warning("Device disconnected, closing WebSocket client")
+                await websocket.send(json.dumps({"status": "error", "message": "Device disconnected"}))
+                break
+            
             # Wait for a message from the client
             message = await websocket.recv()
 
@@ -75,27 +82,37 @@ async def handle_websocket(websocket):
 
                     # Build the SendPlan and execute it
                     command_func = COMMANDS[command_name]
-                    result = await _device_session.execute_command(command_func, *positional_args, **keyword_args)
+                    try:
+                        result = await _device_session.execute_command(command_func, *positional_args, **keyword_args)
 
-                    # Prepare the response
-                    response = {"status": "success", "command": command_name}
-                    
-                    # If the command returned data, include it in the response
-                    if result.data is not None:
-                        # Try to serialize the data
-                        try:
-                            from dataclasses import asdict, is_dataclass
-                            # If data is a dataclass, convert to dict
-                            if is_dataclass(result.data) and not isinstance(result.data, type):
-                                response["data"] = asdict(result.data)
-                            # If data has a __dict__, use it
-                            elif hasattr(result.data, '__dict__'):
-                                response["data"] = result.data.__dict__
-                            else:
+                        # Prepare the response
+                        response = {"status": "success", "command": command_name}
+                        
+                        # If the command returned data, include it in the response
+                        if result.data is not None:
+                            # Try to serialize the data
+                            try:
+                                from dataclasses import asdict, is_dataclass
+                                # If data is a dataclass, convert to dict
+                                if is_dataclass(result.data) and not isinstance(result.data, type):
+                                    response["data"] = asdict(result.data)
+                                # If data has a __dict__, use it
+                                elif hasattr(result.data, '__dict__'):
+                                    response["data"] = result.data.__dict__
+                                else:
+                                    response["data"] = str(result.data)
+                            except Exception as e:
+                                logger.warning(f"Failed to serialize command data: {e}")
                                 response["data"] = str(result.data)
-                        except Exception as e:
-                            logger.warning(f"Failed to serialize command data: {e}")
-                            response["data"] = str(result.data)
+                    except Exception as cmd_error:
+                        # Check if it's a BLE disconnection error
+                        error_msg = str(cmd_error).lower()
+                        if "service discovery" in error_msg or "not connected" in error_msg or "disconnected" in error_msg:
+                            logger.warning(f"Device appears to be disconnected: {cmd_error}")
+                            _device_session._connected = False
+                            response = {"status": "error", "message": "Device disconnected"}
+                        else:
+                            response = {"status": "error", "message": str(cmd_error)}
                 else:
                     response = {"status": "error", "message": "Commande inconnue"}
             except Exception as e:
@@ -107,6 +124,28 @@ async def handle_websocket(websocket):
         logger.info("WebSocket client disconnected")
     except Exception as e:
         logger.error(f"Error in WebSocket handler: {e}")
+
+
+async def reconnect_device(address):
+    """Attempt to reconnect to the BLE device every 10 seconds."""
+    global _device_session
+    
+    while True:
+        try:
+            if _device_session is None or not _device_session.is_connected:
+                logger.info(f"Reconnecting to BLE device {address}...")
+                if _device_session is None:
+                    _device_session = DeviceSession(address)
+                
+                await _device_session.connect()
+                logger.info(f"BLE device reconnected and ready")
+            
+            # Check connection status every 10 seconds
+            await asyncio.sleep(10)
+        except Exception as e:
+            logger.warning(f"Reconnection attempt failed: {e}")
+            # Wait 10 seconds before retrying
+            await asyncio.sleep(10)
 
 
 async def start_server(ip, port, address):
@@ -124,8 +163,13 @@ async def start_server(ip, port, address):
         server = await websockets.serve(handle_websocket, ip, port)
         logger.info(f"WebSocket server started on ws://{ip}:{port}")
         
+        # Start the reconnection monitor task
+        reconnect_task = asyncio.create_task(reconnect_device(address))
+        
         # Keep the server running
         await server.wait_closed()
+    except Exception as e:
+        logger.error(f"Server startup error: {e}")
     finally:
         # Disconnect when the server stops
         if _device_session and _device_session.is_connected:
