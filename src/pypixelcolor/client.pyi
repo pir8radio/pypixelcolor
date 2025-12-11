@@ -39,13 +39,13 @@ class AsyncClient:
     async def delete(self, n: int) -> None:
         """Delete a specific screen by its index."""
         ...
-    async def send_image(self, path: str | pathlib.Path, resize_method: str | pypixelcolor.commands.send_image.ResizeMethod = ResizeMethod.CROP, device_info: pypixelcolor.lib.device_info.DeviceInfo | None = None, save_slot: int = 0) -> None:
+    async def send_image(self, path: Union[str, pathlib._local.Path], resize_method: Union[str, pypixelcolor.commands.send_image.ResizeMethod] = ResizeMethod.CROP, device_info: Optional[pypixelcolor.lib.device_info.DeviceInfo] = None, save_slot: int = 0) -> None:
         """Send an image or animation."""
         ...
-    async def send_image_hex(self, hex_string: str | bytes, file_extension: str, resize_method: str | pypixelcolor.commands.send_image.ResizeMethod = ResizeMethod.CROP, device_info: pypixelcolor.lib.device_info.DeviceInfo | None = None, save_slot: int = 0) -> None:
+    async def send_image_hex(self, hex_string: Union[str, bytes], file_extension: str, resize_method: Union[str, pypixelcolor.commands.send_image.ResizeMethod] = ResizeMethod.CROP, device_info: Optional[pypixelcolor.lib.device_info.DeviceInfo] = None, save_slot: int = 0) -> None:
         """Send an image or animation from a hexadecimal string."""
         ...
-    async def send_text(self, text: str, rainbow_mode: int = 0, animation: int = 0, save_slot: int = 0, speed: int = 80, color: str = "ffffff", bg_color: str | None = None, font: str | pypixelcolor.lib.font_config.FontConfig = "CUSONG", char_height: int | None = None, device_info: pypixelcolor.lib.device_info.DeviceInfo | None = None) -> None:
+    async def send_text(self, text: str, rainbow_mode: int = 0, animation: int = 0, save_slot: int = 0, speed: int = 80, color: str = "ffffff", bg_color: Optional[str] = None, font: Union[str, pypixelcolor.lib.font_config.FontConfig] = "CUSONG", char_height: Optional[int] = None, device_info: Optional[pypixelcolor.lib.device_info.DeviceInfo] = None) -> None:
         """Send a text to the device with configurable parameters."""
         ...
     async def set_brightness(self, level: int) -> None:
@@ -60,7 +60,7 @@ class AsyncClient:
     async def set_orientation(self, orientation: int = 0) -> None:
         """Set the orientation of the device."""
         ...
-    async def set_pixel(self, x: int, y: int, color: str, device_info: pypixelcolor.lib.device_info.DeviceInfo | None = None) -> None:
+    async def set_pixel(self, x: int, y: int, color: str, device_info: Optional[pypixelcolor.lib.device_info.DeviceInfo] = None) -> None:
         """Defines the color of a specific pixel."""
         ...
     async def set_power(self, on: bool = True) -> None:
@@ -72,8 +72,11 @@ class AsyncClient:
     async def set_rhythm_mode_2(self, style: int = 0, t: int = 0) -> None:
         """Set the rhythm mode of the device (alternative version)."""
         ...
-    async def set_time(self, hour: int | None = None, minute: int | None = None, second: int | None = None) -> None:
+    async def set_time(self, hour: Optional[int] = None, minute: Optional[int] = None, second: Optional[int] = None) -> None:
         """Set the device time."""
+        ...
+    async def show_slot(self, number: int) -> None:
+        """Shows the specified slot on the device."""
         ...
     async def __aenter__(self) -> AsyncClient: ...
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None: ...
@@ -110,13 +113,13 @@ class Client:
     def delete(self, n: int) -> None:
         """Delete a specific screen by its index."""
         ...
-    def send_image(self, path: str | pathlib.Path, resize_method: str | pypixelcolor.commands.send_image.ResizeMethod = ResizeMethod.CROP, device_info: pypixelcolor.lib.device_info.DeviceInfo | None = None, save_slot: int = 0) -> None:
+    def send_image(self, path: Union[str, pathlib._local.Path], resize_method: Union[str, pypixelcolor.commands.send_image.ResizeMethod] = ResizeMethod.CROP, device_info: Optional[pypixelcolor.lib.device_info.DeviceInfo] = None, save_slot: int = 0) -> None:
         """Send an image or animation."""
         ...
-    def send_image_hex(self, hex_string: str | bytes, file_extension: str, resize_method: str | pypixelcolor.commands.send_image.ResizeMethod = ResizeMethod.CROP, device_info: pypixelcolor.lib.device_info.DeviceInfo | None = None, save_slot: int = 0) -> None:
+    def send_image_hex(self, hex_string: Union[str, bytes], file_extension: str, resize_method: Union[str, pypixelcolor.commands.send_image.ResizeMethod] = ResizeMethod.CROP, device_info: Optional[pypixelcolor.lib.device_info.DeviceInfo] = None, save_slot: int = 0) -> None:
         """Send an image or animation from a hexadecimal string."""
         ...
-    def send_text(self, text: str, rainbow_mode: int = 0, animation: int = 0, save_slot: int = 0, speed: int = 80, color: str = "ffffff", bg_color: str | None = None, font: str | pypixelcolor.lib.font_config.FontConfig = "CUSONG", char_height: int | None = None, device_info: pypixelcolor.lib.device_info.DeviceInfo | None = None) -> None:
+    def send_text(self, text: str, rainbow_mode: int = 0, animation: int = 0, save_slot: int = 0, speed: int = 80, color: str = "ffffff", bg_color: Optional[str] = None, font: Union[str, pypixelcolor.lib.font_config.FontConfig] = "CUSONG", char_height: Optional[int] = None, device_info: Optional[pypixelcolor.lib.device_info.DeviceInfo] = None) -> None:
         """Send a text to the device with configurable parameters."""
         ...
     def set_brightness(self, level: int) -> None:
@@ -131,7 +134,7 @@ class Client:
     def set_orientation(self, orientation: int = 0) -> None:
         """Set the orientation of the device."""
         ...
-    def set_pixel(self, x: int, y: int, color: str, device_info: pypixelcolor.lib.device_info.DeviceInfo | None = None) -> None:
+    def set_pixel(self, x: int, y: int, color: str, device_info: Optional[pypixelcolor.lib.device_info.DeviceInfo] = None) -> None:
         """Defines the color of a specific pixel."""
         ...
     def set_power(self, on: bool = True) -> None:
@@ -143,8 +146,11 @@ class Client:
     def set_rhythm_mode_2(self, style: int = 0, t: int = 0) -> None:
         """Set the rhythm mode of the device (alternative version)."""
         ...
-    def set_time(self, hour: int | None = None, minute: int | None = None, second: int | None = None) -> None:
+    def set_time(self, hour: Optional[int] = None, minute: Optional[int] = None, second: Optional[int] = None) -> None:
         """Set the device time."""
+        ...
+    def show_slot(self, number: int) -> None:
+        """Shows the specified slot on the device."""
         ...
     def __enter__(self) -> Client: ...
     def __exit__(self, exc_type, exc_val, exc_tb) -> None: ...
