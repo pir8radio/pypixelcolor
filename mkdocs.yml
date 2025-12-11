@@ -3,6 +3,18 @@ site_url: https://lucagoc.github.io/pypixelcolor/
 repo_url: https://github.com/lucagoc/pypixelcolor
 repo_name: lucagoc/pypixelcolor
 
+nav:
+  - Home: index.md
+  - Getting Started:
+    - CLI: getting_started/cli.md
+    - WebSocket: getting_started/websocket.md
+    - Python library: getting_started/library.md
+  - Commands: commands.md
+  - Troubleshooting: troubleshooting.md
+  - Guides:
+    - Custom Fonts: guides/custom_fonts.md
+    - Android BLE Logs: guides/android_ble_logs.md
+
 theme:
   name: material
   features:
@@ -10,15 +22,18 @@ theme:
     - navigation.sections
     - content.code.copy
     - content.action.edit
+  logo: assets/pngs/logo.png
   palette:
-    - scheme: default
-      primary: indigo
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: black
       accent: indigo
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
-    - scheme: slate
-      primary: indigo
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
       accent: indigo
       toggle:
         icon: material/brightness-4
@@ -27,6 +42,9 @@ theme:
 extra:
   version:
     provider: mike
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/lucagoc/pypixelcolor
 
 plugins:
   - search
@@ -34,3 +52,14 @@ plugins:
       handlers:
         python:
           paths: [src]
+
+markdown_extensions:
+  - attr_list
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
+
+copyright: Copyright &copy; 2025 lucagoc | Licensed under the MIT License

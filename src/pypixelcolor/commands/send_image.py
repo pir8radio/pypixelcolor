@@ -363,10 +363,7 @@ def _build_send_plan(file_bytes: bytes, is_gif: bool, plan_name: str = "send_ima
 def send_image(path: Union[str, Path], resize_method: Union[str, ResizeMethod] = ResizeMethod.CROP, device_info: Optional[DeviceInfo] = None, save_slot: int = 0):
     """
     Send an image or animation.
-    Supports:
-        - .png, .webp, .jpg, .jpeg, .bmp, .tiff (static)
-        - .heic, .heif (static, requires pillow-heif library)
-        - .gif (animated)
+    Supports `.png`, `.webp`, `.jpg`, `.jpeg`, `.bmp`, `.tiff`, `.gif` and `.heic, .heif` if pillow-heif library is installed.
     
     Args:
         path: File path.
@@ -411,7 +408,7 @@ def send_image_hex(hex_string: Union[str, bytes], file_extension: str, resize_me
     
     Args:
         hex_string: Hexadecimal representation of image data.
-        file_extension: File extension to indicate image type (e.g. '.png', '.gif').
+        file_extension: File extension to indicate image type (e.g. `.png`, `.gif`).
         device_info: Device information (injected automatically by DeviceSession).
         resize_method: Resize method - 'crop' (default) or 'fit'. 
                   'crop' will fill the entire target area and crop excess.

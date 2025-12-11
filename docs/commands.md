@@ -16,6 +16,8 @@
 
 ## `send_image`
 
+![Send Image](assets/gifs/send_image.gif)
+
 ::: pypixelcolor.commands.send_image.send_image
     options:
       show_root_heading: false
