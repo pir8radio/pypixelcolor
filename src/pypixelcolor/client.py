@@ -51,7 +51,7 @@ def _create_async_method(command_name: str, command_func):
 class AsyncClient:
     """Asynchronous client for controlling the LED matrix via BLE."""
     
-    def __init__(self, address: str):
+    def __init__(self, address: str, password: str = None):
         """Initialize the AsyncClient.
         
         Args:
@@ -59,6 +59,7 @@ class AsyncClient:
         """
         self._session = DeviceSession(address)
         self._connected = False
+        self._password = password
     
     async def connect(self) -> None:
         """Connect to the BLE device and retrieve device info."""
@@ -68,6 +69,10 @@ class AsyncClient:
         
         await self._session.connect()
         self._connected = True
+
+        # send password using command system
+        if self._password:
+            await self.set_password(self._password)
     
     async def disconnect(self) -> None:
         """Disconnect from the BLE device."""
@@ -123,13 +128,13 @@ class Client:
     automatically for simpler usage in non-async code.
     """
     
-    def __init__(self, address: str):
+    def __init__(self, address: str, password: str = None):
         """Initialize the Client.
         
         Args:
             address: Bluetooth device address (e.g., "1D:6B:5E:B5:A5:54")
         """
-        self._async_client = AsyncClient(address)
+        self._async_client = AsyncClient(address, password=password)
         self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._loop_thread = None
         self._setup_loop()
